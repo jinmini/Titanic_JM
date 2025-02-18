@@ -31,7 +31,7 @@ class Service:
         this.fname = fname
         return pd.read_csv(this.context + this.fname)
     
-    def preprocess(self, train_fname, test_fname) -> object:
+    def preprocess(self, train_fname, test_fname) -> object: ### template method
         print("------모델 전처리 시작------")
         feature = ['PassengerId', 'Survived', 'Pclass', 'Name', 'Sex', 
                    'Age', 'SibSp', 'Parch', 'Ticket', 'Fare', 'Cabin', 'Embarked']
@@ -39,11 +39,22 @@ class Service:
         this.train = self.new_model(train_fname)
         this.test = self.new_model(test_fname)
         this.id = this.test['PassengerId'] 
-       
-        drop_features = ['SibSp', 'Parch', 'Cabin', 'Ticket'] # 제거할 컬럼 리스트트
+        this = self.create_train(this)
+        drop_features = ['SibSp', 'Parch', 'Cabin', 'Ticket'] # 제거할 컬럼 리스트
         this = self.drop_feature(this, *drop_features)
-        this = self.embarked_norminal(this)
-
+        this = self.extract_title_from_name(this)
+        title_mapping = self.remove_duplicate_title(this)
+        this = self.title_nominal(this, title_mapping)
+        this = self.drop_feature(this, 'Name')
+        this = self.gender_nominal(this)
+        this = self.drop_feature(this, 'Sex')
+        this = self.embarked_nominal(this)  
+        self.df_info(this)
+        this = self.age_ratio(this)
+        this = self.drop_feature(this, 'Age')
+        this = self.pclass_ordinal(this)
+        this = self.fare_ratio(this)
+        this = self.drop_feature(this, "Fare")
         return this
 
     @staticmethod
@@ -51,38 +62,95 @@ class Service:
         return this.train['Survived']
     
     @staticmethod
-    def create_train(this) -> object : 
-        return this.train.drop('Survived', axis=1)
+    def create_train(this) -> object :
+        this.train = this.train.drop('Survived', axis=1)
+        return this
     
     @staticmethod
-    def drop_feature(this, *drop_features) -> object : 
-        for i in drop_features: 
-            this.train.drop([i], axis=1)
-            this.test.drop([i], axis=1)
+    def drop_feature(this, *feature) -> object : 
+        [i.drop(j, axis=1, inplace=True) for j in feature for i in [this.train, this.test]] 
         return this
     
     @staticmethod 
-    def paclss_ordinal():
-        pass
+    def df_info(this):
+       return this
+ 
+    @staticmethod 
+    def remove_duplicate_title(this):
+        a = []
+        for i in [this.train, this.test]:
+            a += list(set(i['Title']))
+        a = list(set(a))
+        print(a)
+        {'Master', 'Dr', 'Dona', 'Mr', 'Rev', 'Miss', 'Col', 'Mrs', 'Ms'}
+
+        '''
+        ['Mr', 'Sir', 'Major', 'Don', 'Rev', 'Countess', 'Lady', 'Jonkheer', 'Dr',
+        'Miss', 'Col', 'Ms', 'Dona', 'Mlle', 'Mme', 'Mrs', 'Master', 'Capt']
+        Royal : ['Countess', 'Lady', 'Sir']
+        Rare : ['Capt','Col','Don','Dr','Major','Rev','Jonkheer','Dona','Mme' ]
+        Mr : ['Mlle']
+        Ms : ['Miss']
+        Master
+        Mrs
+        '''
+        title_mapping = {'Mr': 1, 'Ms': 2, 'Mrs': 3, 'Master': 4, 'Royal': 5, 'Rare': 6}
+
+        return title_mapping
+    
+    @staticmethod 
+    def extract_title_from_name(this):
+        [i.__setitem__('Title', i['Name'].str.extract('([A-Za-z]+)\.', expand=False)) 
+         for i in [this.train, this.test]]
+        return this
+    
+    @staticmethod 
+    def title_nominal(this, title_mapping):
+        for i in [this.train, this.test]:
+            i['Title'] = i['Title'].map(title_mapping)
+        return this
+    
+    @staticmethod
+    def title_nominal(this, title_mapping):
+        for i in [this.train, this.test]:
+            i['Title'] = i['Title'].replace(['Countess', 'Lady', 'Sir'], 'Royal')
+            i['Title'] = i['Title'].replace(['Capt','Col','Don','Dr','Major','Rev','Jonkheer','Dona','Mme'], 'Rare')
+            i['Title'] = i['Title'].replace(['Mlle'], 'Mr')
+            i['Title'] = i['Title'].replace(['Miss'], 'Ms')
+            # Master 는 변화없음
+            # Mrs 는 변화없음
+            i['Title'] = i['Title'].fillna(0)
+            i['Title'] = i['Title'].map(title_mapping)
+    
+        return this
+    
+    @staticmethod 
+    def pclass_ordinal(this):
+        return this
      
     @staticmethod
-    def gender_norminal():
-        pass
+    def gender_nominal(this):
+        return this
      
     @staticmethod
-    def age_ordinal():
-        pass
+    def age_ratio(this): 
+        return this
      
     @staticmethod
-    def fare_ordinal():
-        pass
+    def fare_ratio(this): 
+        return this 
 
     @staticmethod
-    def embarked_norminal(this):
+    def embarked_nominal(this):
         this.train = this.train.fillna({'Embarked':'S'})
         this.test = this.test.fillna({'Embarked':'S'})
         this.train['Embarked'] = this.train['Embarked'].map({'S':1, 'C':2, 'Q':3})
         this.test['Embarked'] = this.test['Embarked'].map({'S':1, 'C':2, 'Q':3})
 
         return this
+    
+    #@staticmethod 
+    #def null_check(this):
+    #    [print(i.isnull().sum(), inplace=True) for i in [this.train, this.test]]
+    #    return this
 
