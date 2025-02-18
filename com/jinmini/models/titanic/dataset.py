@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 @dataclass
 class Dataset:
-    train : object 
+    train : object  
     test : object 
     context : str
     fname : str 
