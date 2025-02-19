@@ -1,5 +1,6 @@
 from com.jinmini.models.titanic.dataset import Dataset
 import pandas as pd 
+import numpy as np
 
 """
 PassengerId  고객ID,
@@ -23,7 +24,7 @@ print(f'SVM 활용한 검증 정확도 {None}')
 """
 class Service:
     
-    dataset = Dataset()
+    dataset = Dataset() #class variable, 관례에 따라 클래스 헤더 바로 아래 
 
     def new_model(self, fname) -> object: 
         this = self.dataset 
@@ -77,6 +78,13 @@ class Service:
  
     @staticmethod 
     def remove_duplicate_title(this):
+        for i in [this.train, this.test]:
+            a = []
+            a = set(i['Title'])
+        return this
+    
+    @staticmethod 
+    def remove_duplicate_title(this):
         a = []
         for i in [this.train, this.test]:
             a += list(set(i['Title']))
@@ -100,7 +108,7 @@ class Service:
     
     @staticmethod 
     def extract_title_from_name(this):
-        [i.__setitem__('Title', i['Name'].str.extract('([A-Za-z]+)\.', expand=False)) 
+        [i.__setitem__('Title', i['Name'].str.extract(r'([A-Za-z]+)\.', expand=False)) 
          for i in [this.train, this.test]]
         return this
     
@@ -119,7 +127,7 @@ class Service:
             i['Title'] = i['Title'].replace(['Miss'], 'Ms')
             # Master 는 변화없음
             # Mrs 는 변화없음
-            i['Title'] = i['Title'].fillna(0)
+            i['Title'] = i['Title'].fillna(0) 
             i['Title'] = i['Title'].map(title_mapping)
     
         return this
@@ -130,16 +138,32 @@ class Service:
      
     @staticmethod
     def gender_nominal(this):
-        return this
-     
+       [i.__setitem__('Gender', i['Sex'].map({'male': 0, 'female': 1})) 
+        for i in [this.train, this.test]]
+       return this
+    
     @staticmethod
     def age_ratio(this): 
+   
+        age_mapping = {'Unknown':0 , 'Baby': 1, 'Child': 2, 'Teenager' : 3, 'Student': 4,
+                       'Young Adult': 5, 'Adult':6,  'Senior': 7}
+        
+        bins = [-1, 0, 5, 12, 18, 24, 35, 60, np.inf]
+        labels = ['Unknown', 'Baby', 'Child', 'Teenager', 
+                  'Student', 'Young Adult', 'Adult', 'Senior']
+        
+        for i in [this.train, this.test]:
+            i['Age'] = i['Age'].fillna(-0.5) 
+            i['AgeGroup'] = pd.cut(i['Age'], bins=bins, labels=labels)
+            i['AgeGroup'] = i['AgeGroup'].map(age_mapping)
+            print(i[['Age', 'AgeGroup']])
+
         return this
      
     @staticmethod
     def fare_ratio(this): 
         return this 
-
+    
     @staticmethod
     def embarked_nominal(this):
         this.train = this.train.fillna({'Embarked':'S'})

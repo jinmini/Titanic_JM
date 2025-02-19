@@ -8,7 +8,7 @@ class Controller :
     service = Service()
 
     def modeling(self, train, test):#template method pattern
-        this = self.service.preprocess(train, test)
+        this = self.service.preprocess(train, test) #dynamic
         self.print_this(this)
         #this.train = self.service.create_train(this) #답
         #print("트레인 머신에게 내는 문제")
