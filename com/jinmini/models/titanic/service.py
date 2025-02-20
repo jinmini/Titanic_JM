@@ -24,7 +24,7 @@ print(f'SVM 활용한 검증 정확도 {None}')
 """
 class Service:
     
-    dataset = Dataset() #class variable, 관례에 따라 클래스 헤더 바로 아래 
+    dataset = Dataset()  
 
     def new_model(self, fname) -> object: 
         this = self.dataset 
@@ -32,7 +32,7 @@ class Service:
         this.fname = fname
         return pd.read_csv(this.context + this.fname)
     
-    def preprocess(self, train_fname, test_fname) -> object: ### template method
+    def preprocess(self, train_fname, test_fname) -> object: 
         print("------모델 전처리 시작------")
         feature = ['PassengerId', 'Survived', 'Pclass', 'Name', 'Sex', 
                    'Age', 'SibSp', 'Parch', 'Ticket', 'Fare', 'Cabin', 'Embarked']
@@ -41,7 +41,7 @@ class Service:
         this.test = self.new_model(test_fname)
         this.id = this.test['PassengerId'] 
         this = self.create_train(this)
-        drop_features = ['SibSp', 'Parch', 'Cabin', 'Ticket'] # 제거할 컬럼 리스트
+        drop_features = ['SibSp', 'Parch', 'Cabin', 'Ticket'] 
         this = self.drop_feature(this, *drop_features)
         this = self.extract_title_from_name(this)
         title_mapping = self.remove_duplicate_title(this)
@@ -54,7 +54,7 @@ class Service:
         this = self.age_ratio(this)
         this = self.drop_feature(this, 'Age')
         this = self.pclass_ordinal(this)
-        this = self.fare_ratio(this)
+        this = self.fare_ordinal(this)
         this = self.drop_feature(this, "Fare")
         return this
 
@@ -159,9 +159,15 @@ class Service:
             print(i[['Age', 'AgeGroup']])
 
         return this
-     
+ 
     @staticmethod
-    def fare_ratio(this): 
+    def fare_ordinal(this): 
+        for i in [this.train, this.test]:
+            i['FareGroup'] = pd.qcut(i['Fare'], 4 , labels = {1,2,3,4})
+        
+        this.train = this.train.fillna({'FareGroup' : 1})
+        this.train = this.test.fillna({'FareGroup' : 1})
+
         return this 
     
     @staticmethod
